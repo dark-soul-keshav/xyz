@@ -326,10 +326,15 @@ def rule_parse(question):
         spec["start"], spec["end"] = str(s), str(e)
 
     group = None
-    for dim in ("product", "region", "customer", "month"):
-        if re.search(rf"\b(which|what)\s+(\w+\s+)?{dim}\b", q) or re.search(rf"\b(top|best|highest)\s+{dim}\b", q):
-            group = dim
-            break
+    dims = "product|region|customer|month"
+    rank_cue = r"(top|best|highest|most|lowest|least|fewest|worst|biggest|largest|smallest|leading|bestselling|best-selling|top-selling|top-grossing|highest-grossing)"
+    m_g = (re.search(rf"\b(which|what)\s+(?:[\w\-]+\s+){{0,3}}?({dims})s?\b", q)
+           or re.search(rf"\b{rank_cue}\b[\w\-, ]{{0,30}}?\b({dims})s?\b", q))
+    if m_g:
+        group = m_g.group(m_g.lastindex)
+        # a bare "what ... <dim>" without any ranking word is a filter, not a ranking
+        if not re.search(rf"\b{rank_cue}\b", q) and not re.search(rf"\b(which)\s+(?:[\w\-]+\s+){{0,3}}?{group}s?\b", q):
+            group = None
     metric = None
     if re.search(r"\b(average|mean|avg)\b", q):
         metric = "avg_order_value"
